@@ -1,0 +1,25 @@
+NOTES.md
+TODO.md
+**/__pycache__
+
+# Editor specific files
+/.vscode
+
+# Compiled python modules.
+*.pyc
+
+*.swp
+*.swo
+
+# Dataset symlinks
+data/*
+!data/README.md
+
+tests/*
+
+# Outputs
+output/**
+!output/README.md
+
+# Mac files
+**/.DS_Store
