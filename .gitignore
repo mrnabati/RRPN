@@ -15,8 +15,6 @@ TODO.md
 data/*
 !data/README.md
 
-tests/*
-
 # Outputs
 output/**
 !output/README.md

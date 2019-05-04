@@ -5,7 +5,7 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$(dirname "$CUR_DIR")"
 
 ## Set the proposal files in the config file
-MODEL="R_101_FPN_2x_ft30000_nucoco_sw_fb_rrpn_v6"
+MODEL="R_101_FPN_2x_ft30000_nucoco_sw_fb_rrpn"
 DATASET='nucoco_sw_fb'
 
 ##------------------------------------------------------------------------------

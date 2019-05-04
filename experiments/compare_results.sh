@@ -4,9 +4,8 @@
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$(dirname "$CUR_DIR")"
 
-## Can compare as many models as you want if you add them to the COMMAND below
-MODEL1="X_101_32x8d_FPN_1x_ft30000_nucoco_sw_fb_rrpn_v4"
-MODEL2="X_101_32x8d_FPN_1x_ft30000_nucoco_sw_fb_rrpn_v6"
+MODEL1="X_101_32x8d_FPN_1x_ft30000_nucoco_sw_fb_rrpn"
+MODEL2="X_101_32x8d_FPN_1x_ft50000_nucoco_sw_fb_rrpn"
 OUT_DIR="$ROOT_DIR/output/results"
 
 ##------------------------------------------------------------------------------

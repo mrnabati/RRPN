@@ -6,7 +6,7 @@ ROOT_DIR="$(dirname "$CUR_DIR")"
 
 DATASET='nucoco_s_fb'   # Dataset to generate proposals for
 INCLUDE_DEPTH=0
-PROP_OUT_DIR="$ROOT_DIR/data/proposals/$DATASET/rrpn_v6"
+PROP_OUT_DIR="$ROOT_DIR/data/proposals/$DATASET/rrpn"
 
 ##------------------------------------------------------------------------------
 TR_IMGS_DIR="$ROOT_DIR/data/datasets/$DATASET/train"
