@@ -119,10 +119,8 @@ if __name__ == '__main__':
             points_b = np.squeeze(np.dstack((points_b[0,:], points_b[1,:], points_b[2,:]))).tolist()
             if not isinstance(points_f[0], list) and len(points_f) == 3:
                 points_f = [points_f]
-                print(points_f)
             if not isinstance(points_b[0], list) and len(points_b) == 3:
                 points_b = [points_b]
-                print(points_b)
 
             for box in boxes_f:
                 coco_cat, coco_cat_id, coco_supercat = nuscene_cat_to_coco(box.name)

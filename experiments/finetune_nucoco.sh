@@ -8,11 +8,11 @@ ROOT_DIR="$(dirname "$CUR_DIR")"
 
 ## Parameters
 #CUDA_VISIBLE_DEVICES=1,3
-DATASET='nucoco_sw_fb'
-PROPOSAL_METHOD='eb'
+DATASET='nucoco'
+PROPOSAL_METHOD='rrpn'  ## 'ss': Selective Search, 'eb':Edge Boxes , 'rrpn'
 CFG="$ROOT_DIR/experiments/cfgs/fast_rcnn_X-101-32x8d-FPN_1x_finetune_nucoco.yaml"
-TRAIN_WEIGHTS="$ROOT_DIR/data/models/X_101_32x8d_FPN_1x_original_RW/model_final.pkl"
-OUT_DIR="$ROOT_DIR/data/models/X_101_32x8d_FPN_1x_ft30000_nucoco_sw_fb_eb"
+TRAIN_WEIGHTS="$ROOT_DIR/data/models/fast_rcnn_X-101-32x8d-FPN_1x_removedWeights/model_final.pkl"
+OUT_DIR="$ROOT_DIR/data/models/fast_rcnn_X-101-32x8d-FPN_1x_nucoco_rrpn"
 
 ##------------------------------------------------------------------------------
 TRAIN_PROP_FILES="('$ROOT_DIR/data/proposals/$DATASET/$PROPOSAL_METHOD/proposals_nucoco_train.pkl',)"

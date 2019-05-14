@@ -4,12 +4,14 @@
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$(dirname "$CUR_DIR")"
 
-DATASET='nucoco_s_fb'   # New dataset's name
+DATASET='nucoco'   # New dataset's name
 TRAIN_RATIO=0.85        # Training data percentage
-INCLUDE_SWEEPS='False'   # If 'True', include non key-frame samples
+INCLUDE_SWEEPS='True'   # If 'True', include non key-frame samples
 
 ##------------------------------------------------------------------------------
 ## Do not change anything below this line!
+set -e
+
 NUSCENES_DIR="$ROOT_DIR/data/datasets/nuscenes"
 TR_IMGS_DIR="$ROOT_DIR/data/datasets/$DATASET/train"
 VA_IMGS_DIR="$ROOT_DIR/data/datasets/$DATASET/val"

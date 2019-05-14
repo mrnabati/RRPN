@@ -39,7 +39,6 @@ def pointcloud_to_bbox(points, coloring, im, scale=False):
     :return allCorners:
     """
 
-    ## TODO: Change corners foramt to compy with the original devkit format
     allCorners = []
 
     for i, (x, y) in enumerate(zip(points[0], points[1])):

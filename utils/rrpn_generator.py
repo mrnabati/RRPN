@@ -88,7 +88,6 @@ def _generate_anchors(point, sizes, aspect_ratios, layout, beta, include_depth):
 def _filter_anchors(anchors):
     """Filter anchors based on their size
     """
-    #TODO: Implement this function
     return anchors
 
 

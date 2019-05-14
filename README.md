@@ -9,7 +9,7 @@ and recall values higher than or on par with vision based RPNs. We evaluate RRPN
 using the [Fast R-CNN](https://arxiv.org/abs/1504.08083) network on the
 [NuScenes](https://www.nuscenes.org/) dataset and compare the results with the
 [Selective Search](https://ivi.fnwi.uva.nl/isis/publications/2013/UijlingsIJCV2013/UijlingsIJCV2013.pdf)
-algorithm.
+algorithm. For more details, please refer to our [arXiv paper](https://arxiv.org/abs/1905.00526).
 
 ## Citing RRPN
 
@@ -28,8 +28,9 @@ If you find RRPN useful in your research, please consider citing:
 
 1. [Requirements](#requirements)
 2. [Installation](#installation)
-3. [Demo](#demo)
-4. [Usage](#usage)
+3. [Prepare Datasets](#prepare-datasets)
+4. [Demo](#demo)
+5. [Usage](#usage)
 
 --------------------------------------------------------------------------------
 
@@ -65,9 +66,9 @@ folder. Change the `BASE_DIR` variable below if you want to clone it to another
 directory.
 
     ```bash
-    BASE_DIR='~/RRPN'
+    BASE_DIR=~/RRPN
+    git clone https://github.com/mrnabati/RRPN $BASE_DIR
     cd $BASE_DIR
-    git clone https://github.com/mrnabati/RRPN .
     
     # Install prerequisites in the virtual environment
     workon RRPN
@@ -77,8 +78,8 @@ directory.
 1. Install the COCO API (pycocotools)
 
     ```bash
-    COCOAPI_DIR='~/cocoapi'
-    git clone https://github.com/cocodataset/cocoapi.git $COCOAPI
+    COCOAPI_DIR=~/cocoapi
+    git clone https://github.com/cocodataset/cocoapi.git $COCOAPI_DIR
     cd $COCOAPI_DIR/PythonAPI
     # Install into global site-packages
     make install
@@ -87,13 +88,16 @@ directory.
     python setup.py install
     ```
 
-1. Set up Python modules for Detectron:
+1. Set up Python modules for Detectron and add symlink to dataset:
 
     ```bash
     cd $BASE_DIR/detectron && make
-    # Check that Detectron tests pass
-    python $BASE_DIR/detectron/tests/test_spatial_narrow_as_op.py
+    ln -s $BASE_DIR/data/datasets/nucoco $BASE_DIR/detectron/detectron/datasets/data/nucoco
+    # Optional: Check that Detectron tests pass
+    python $BASE_DIR/detectron/detectron/tests/test_spatial_narrow_as_op.py
     ```
+
+## Prepare Datasets
 
 1. Download the NuScenes teaser dataset archive files from its [Download Page](https://www.nuscenes.org/download), 
   unpack the archive files to `$BASE_DIR/data/datasets/nuscenes/` _without_
@@ -108,34 +112,30 @@ directory.
       |_ v0.1
     ```
 
-2. Add the following symlink for detectron dataset:
-    
+1. Convert the NuScenes dataset to the COCO dataset format. We call this new dataset `nucoco`:
+
     ```bash
-    ln -s $BASE_DIR/data/datasets/nucoco $BASE_DIR/detectron/detectron/datasets/data/nucoco
+    bash $BASE_DIR/experiments/convert_nuscenes_to_nucoco.sh
     ```
+
+    By default, both the key-frame and non key-frame images from the front and 
+    back cameras in the
+    NuScenes dataset are used to generate the new dataset. Change the
+    `INCLUDE_SWEEPS` parameter in the script to `False` if you only want to use
+    the key-frame images.
+
 
 ## Demo
 
 To be added soon.
 
+
 ## Usage
-
-1. Convert the NuScenes dataset to COCO format using the `convert_nuscenes_to_nucoco.sh`
-  script in the experiments folder. We call this dataset `nucoco`:
-
-    ```bash
-    bash $BASE_DIR/convert_nuscenes_to_nucoco.sh
-    ```
-
-    By default, only the key-frame images from the front and back cameras in the
-    NuScenes dataset are used to generate the new dataset. Change the
-    `INCLUDE_SWEEPS` parameter in the script to `True` if you want to include
-    the non key-frame images as well.
   
-1. Generate the RRPN proposals for the nucoco dataset:
+1. Generate RRPN proposals for the nucoco dataset:
    
     ```bash
-    bash $BASE_DIR/generate_rrpn_proposals.sh
+    bash $BASE_DIR/experiments/generate_rrpn_proposals.sh
     ```
 
 1. Download ppretrained Fast R-CNN models from the detectron
@@ -147,26 +147,28 @@ To be added soon.
    [X-101-32x8d-FPN 1x](https://dl.fbaipublicfiles.com/detectron/37119777/12_2017_baselines/fast_rcnn_X-101-32x8d-FPN_1x.yaml.06_38_03.d5N36egm/output/train/coco_2014_train%3Acoco_2014_valminusminival/generalized_rcnn/model_final.pkl)
    (model no. 37119777) models.
 
-1. Before starting finetuning on the nucoco dataset, remove the weights in the 
-   last layer of the pretrained model by running the `remove_class_weights.sh` script in
+1. Before starting finetuning on the nucoco dataset, remove last layer's weights in the
+   the pretrained model by running the `remove_class_weights.sh` script in
    the `experiments` folder. Change the `INPUT_MODEL` and `OUPUT_MODEL` veriables
    in the script based on the path to pretrained models.
 
     ```bash
-    bash $BASE_DIR/remove_class_weights.sh
+    bash $BASE_DIR/experiments/remove_class_weights.sh
     ```
 
 1. Use the `finetune_nucoco.sh` script to start training using the RRPN proposals.
-   Change the variables in the `Parameters` section of the script as needed.
+   Change the variables under `Parameters` in the script as needed.
     
     ```bash
-    bash $BASE_DIR/finetune_nucoco.sh
+    bash $BASE_DIR/experiments/finetune_nucoco.sh
     ```
 
 1. After training is complete, use the `infer_nucoco.sh` script to run inference
-   on the validation set images. Change the veriables in the `Parameters` 
-   section of the script as needed.
+   on the validation set images. Change the veriables under `Parameters` 
+   in the script as needed.
 
     ```bash
-    bash $BASE_DIR/infer_nucoco.sh
+    bash $BASE_DIR/experiments/infer_nucoco.sh
     ```
+
+    results are saved in the model directory under `results\vis`.

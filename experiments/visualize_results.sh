@@ -4,12 +4,12 @@
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$(dirname "$CUR_DIR")"
 
-MODEL="X_101_32x8d_FPN_1x_ft30000_nucoco_sw_f_eb"
+MODEL="fast_rcnn_X-101-32x8d-FPN_1x_nucoco_rrpn"
 TITLE="$MODEL"
 LOG_TYPE="val"
 
 ##------------------------------------------------------------------------------
-MODEL_DIR="$ROOT_DIR/output/models/$MODEL"
+MODEL_DIR="$ROOT_DIR/data/models/$MODEL"
 OUT_DIR="$MODEL_DIR/results"
 
 set -e

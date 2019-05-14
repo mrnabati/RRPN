@@ -4,8 +4,8 @@
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$(dirname "$CUR_DIR")"
 
-MODEL1="X_101_32x8d_FPN_1x_ft30000_nucoco_sw_fb_rrpn"
-MODEL2="X_101_32x8d_FPN_1x_ft50000_nucoco_sw_fb_rrpn"
+MODEL1="fast_rcnn_X-101-32x8d-FPN_1x_nucoco_rrpn"
+MODEL2="fast_rcnn_X-101-32x8d-FPN_1x_nucoco_ss"
 OUT_DIR="$ROOT_DIR/output/results"
 
 ##------------------------------------------------------------------------------
@@ -16,6 +16,8 @@ MAT_FILE2="$MODEL2_DIR/val_results.mat"
 LOG_FILE1="$MODEL1_DIR/val_results.txt"
 LOG_FILE2="$MODEL2_DIR/val_results.txt"
 COMMAND="comp_results('$OUT_DIR', '$MAT_FILE1', '$MODEL1', '$MAT_FILE2', '$MODEL2')"
+
+set -e
 
 if [ ! -d "$MODEL1_DIR" ]; then
   echo "ERROR: Model 1 directory not found."

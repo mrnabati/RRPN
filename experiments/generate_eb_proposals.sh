@@ -4,7 +4,7 @@
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$(dirname "$CUR_DIR")"
 
-DATASET='nucoco_sw_fb'   # Dataset to generate proposals for
+DATASET='nucoco'   # Dataset to generate proposals for
 
 ##------------------------------------------------------------------------------
 DATASET_DIR="$ROOT_DIR/output/datasets/$DATASET"

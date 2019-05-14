@@ -5,8 +5,8 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$(dirname "$CUR_DIR")"
 
 
-MODEL_DIR="$ROOT_DIR/output/models/X_101_32x8d_FPN_1x_ft30000_nucoco_sw_fb_ss"
-DATASET='nucoco_sw_fb'       ## Must be the same dataset model is trained on
+MODEL_DIR="$ROOT_DIR/data/models/fast_rcnn_X-101-32x8d-FPN_1x_nucoco_rrpn"
+DATASET='nucoco'       ## Must be the same dataset model is trained on
 THRESH=0.7
 FIRST=0     # Only visualize the first K images
 
