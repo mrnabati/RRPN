@@ -1,3 +1,6 @@
+## **[DEPRECATED] This version of RRPN was developed for the NuScenes Teaser dataset (v0.1) and is deprecated. A new version of the code compatible with the full Nuscenes dataset (v1.0) will be available here soon. Stay tuned!**
+---
+
 # RRPN: Radar Region Proposal Network for Sensor Fusion in Autonomous Vehicles
 
 ## Introduction
