@@ -1,9 +1,10 @@
-## **[DEPRECATED] This version of RRPN was developed for the NuScenes Teaser dataset (v0.1) and is deprecated. A new version of the code compatible with the full Nuscenes dataset (v1.0) will be available here soon. Stay tuned!**
----
-
 # RRPN: Radar Region Proposal Network for Sensor Fusion in Autonomous Vehicles
 
 ## Introduction
+
+
+|<img src="images/2_gt.jpg" width="500px"> | <img src="images/2_prop.jpg" width="500px"> | <img src="images/2_det.jpg" width="500px">
+|- | - | -|
 
 RRPN is a Region Proposal Network (RPN) exploiting Radar detections to propose
 Regions of Interest (RoI) for object detection in autonomous vehicles. RRPN provides
@@ -12,166 +13,122 @@ and recall values higher than or on par with vision based RPNs. We evaluate RRPN
 using the [Fast R-CNN](https://arxiv.org/abs/1504.08083) network on the
 [NuScenes](https://www.nuscenes.org/) dataset and compare the results with the
 [Selective Search](https://ivi.fnwi.uva.nl/isis/publications/2013/UijlingsIJCV2013/UijlingsIJCV2013.pdf)
-algorithm. For more details, please refer to our [arXiv paper](https://arxiv.org/abs/1905.00526).
+algorithm.
 
-## Citing RRPN
 
-If you find RRPN useful in your research, please consider citing:
+> This project has been updated to work with the full nuScenes dataset (v1.0).
+> The results reported in the paper are based on the Teaser version of the 
+> nuScenes dataset (v0.1), which is now deprecated.
 
-```
-@article{Nabati2019RRPN,
-    title={RRPN: Radar Region Proposal Network for Object Detection in Autonomous Vehicles},
-    author={Nabati, Ramin and Qi, Hairong},
-    journal={arXiv:1905.00526},
-    year={2019}
-}
-```
+#### Links:
+[[RRPN on arXive](https://arxiv.org/abs/1905.00526)] - [[RRPN on IEEE Explore](https://ieeexplore.ieee.org/abstract/document/8803392)]
 
 ## Contents
 
 1. [Requirements](#requirements)
 2. [Installation](#installation)
-3. [Prepare Datasets](#prepare-datasets)
-4. [Demo](#demo)
-5. [Usage](#usage)
-
+3. [Training](#training)
+4. [Evaluation and Inference](#evaluation-and-inference)
 --------------------------------------------------------------------------------
-
 ## Requirements
 
-- ### Python3.7
-
-  RRPN requires Python >= 3.7.0 to work. You can download Python [here](https://www.python.org/downloads/).
-
-- ### Virtual Environment
-  **Using a virtual environment is optional but highly recommended.*
-  1. Install [virtualenv](https://virtualenv.pypa.io/en/latest/installation/) and
-    [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/install.html)
-
-  1. Create a virtual environment for Python 3.7
-
-      ```bash
-      mkvirtualenv RRPN --python /usr/local/bin/python3.7
-      ```
-
-      Note: path to your Python3.7 may be different.
-
-- ### Caffe2
-  - Follow the steps [here](https://caffe2.ai/docs/getting-started.html?platform=mac&configuration=prebuilt) to install Caffe2 with GPU support.
-
+- Python3.7
+- Caffe2 with GPU support
 --------------------------------------------------------------------------------
-
 ## Installation
 
-1. Clone the repo and install the prerequisites in a Python3.7 virtual
-environment. Here the repository is cloned to the `~/RRPN`
-folder. Change the `BASE_DIR` variable below if you want to clone it to another
-directory.
+- Clone the repo and install the prerequisites:
 
-    ```bash
-    BASE_DIR=~/RRPN
-    git clone https://github.com/mrnabati/RRPN $BASE_DIR
-    cd $BASE_DIR
-    
-    # Install prerequisites in the virtual environment
-    workon RRPN
-    pip install -r requirements.txt
-    ```
+  ```bash
+  cd ~
+  clone https://github.com/mrnabati/RRPN
+  cd rrpn
+  python -m pip install -r requirements.txt
+  ```
 
-1. Install the COCO API (pycocotools)
+- Set up Detectron Python modules:
 
-    ```bash
-    COCOAPI_DIR=~/cocoapi
-    git clone https://github.com/cocodataset/cocoapi.git $COCOAPI_DIR
-    cd $COCOAPI_DIR/PythonAPI
-    # Install into global site-packages
-    make install
-    # Alternatively, if you do not have permissions or prefer
-    # not to install the COCO API into global site-packages:
-    python setup.py install
-    ```
+  ```bash
+  cd ~/rrpn/detectron 
+  make
+  ```
 
-1. Set up Python modules for Detectron and add symlink to dataset:
-
-    ```bash
-    cd $BASE_DIR/detectron && make
-    ln -s $BASE_DIR/data/datasets/nucoco $BASE_DIR/detectron/detectron/datasets/data/nucoco
-    # Optional: Check that Detectron tests pass
-    python $BASE_DIR/detectron/detectron/tests/test_spatial_narrow_as_op.py
-    ```
-
-## Prepare Datasets
-
-1. Download the NuScenes teaser dataset archive files from its [Download Page](https://www.nuscenes.org/download), 
-  unpack the archive files to `$BASE_DIR/data/datasets/nuscenes/` _without_
+- Download the NeScenes dataset from its [Download Page](https://www.nuscenes.org/download), 
+  unpack the archive files to `~/rrpn/data/nuscenes/` _without_
   overwriting folders that occur in multiple archives. Eventually you should
   have the following folder structure:
 
-    ```bash
-    $BASE_DIR/data/datasets/nuscenes/
-      |- maps
-      |- samples
-      |- sweeps
-      |_ v0.1
-    ```
+  ```
+  nuscenes
+    |__ maps
+    |__ samples
+    |__ sweeps
+    |__ v1.0-mini
+    |__ v1.0-test
+    |__ v1.0-trainval
+  ```
 
-1. Convert the NuScenes dataset to the COCO dataset format. We call this new dataset `nucoco`:
+--------------------------------------------------------------------------------
+## Training
+- First convert the nuScenes dataset to the COCO format by running the `0_nuscenes_to_coco.sh`
+script under [experiments](./experiments/) for both training and validation sets.
+This should result in the following folder structure in the `~/rrpn/data/nucoco` directory:
 
-    ```bash
-    bash $BASE_DIR/experiments/convert_nuscenes_to_nucoco.sh
-    ```
+  ```
+  nucoco
+    |__ annotations
+    |   |__ instances_train.json
+    |   |__ instances_val.json
+    |
+    |__ train
+    |   |__ 00000001.jpg
+    |   |__ ...
+    |__ val
+        |__ 00000001.jpg
+        |__ ...
+  ```
 
-    By default, both the key-frame and non key-frame images from the front and 
-    back cameras in the
-    NuScenes dataset are used to generate the new dataset. Change the
-    `INCLUDE_SWEEPS` parameter in the script to `False` if you only want to use
-    the key-frame images.
+- Generate proposals for the training and validation splits by running the `1_generate_proposals.sh` script. This should add an `proposals` directory in the 
+above structure:
 
+  ```
+  nucoco
+    |__ annotations
+    |   |__ instances_train.json
+    |   |__ instances_val.json
+    |
+    |__ proposals
+    |   |__ proposals_train.pkl
+    |   |__ proposals_val.pkl
+    |
+    |__ train
+    |   |__ 00000001.jpg
+    |   |__ ...
+    |__ val
+        |__ 00000001.jpg
+        |__ ...
+  ```
 
-## Demo
+- Start training by running the `2_train.sh` script. Change the config file and 
+other parameters in the script as you wish. If you don't want to train from 
+scratch, download the pre-trained Fast-RCNN model based on your
+selected config file from the [Detectron Model Zoo](https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md) and fine-tune it on the nuScenes dataset.
 
-To be added soon.
+--------------------------------------------------------------------------------
+## Evaluation and Inference
+- Run the `3_test.sh` script in the [experiments](./experiments/) directory to evaluate the trained model on the whole validation set and see the evaluation statistics. Make sure to change the parameters in the script to select the model, config file and dataset you want to evaluate on.
+- Run the `4_inference.sh` script to perform inference on a single image from the dataset.
 
-
-## Usage
-  
-1. Generate RRPN proposals for the nucoco dataset:
-   
-    ```bash
-    bash $BASE_DIR/experiments/generate_rrpn_proposals.sh
-    ```
-
-1. Download ppretrained Fast R-CNN models from the detectron
-   [model zoo](https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md)
-   into the `$BASE_DIR/data/models` directory. RRPN results are calculated 
-   based on the 
-   [R-101-FPN 2x](https://dl.fbaipublicfiles.com/detectron/36228933/12_2017_baselines/fast_rcnn_R-101-FPN_2x.yaml.09_26_27.jkOUTrrk/output/train/coco_2014_train%3Acoco_2014_valminusminival/generalized_rcnn/model_final.pkl) 
-   (model no. 36228933) and
-   [X-101-32x8d-FPN 1x](https://dl.fbaipublicfiles.com/detectron/37119777/12_2017_baselines/fast_rcnn_X-101-32x8d-FPN_1x.yaml.06_38_03.d5N36egm/output/train/coco_2014_train%3Acoco_2014_valminusminival/generalized_rcnn/model_final.pkl)
-   (model no. 37119777) models.
-
-1. Before starting finetuning on the nucoco dataset, remove last layer's weights in the
-   the pretrained model by running the `remove_class_weights.sh` script in
-   the `experiments` folder. Change the `INPUT_MODEL` and `OUPUT_MODEL` veriables
-   in the script based on the path to pretrained models.
-
-    ```bash
-    bash $BASE_DIR/experiments/remove_class_weights.sh
-    ```
-
-1. Use the `finetune_nucoco.sh` script to start training using the RRPN proposals.
-   Change the variables under `Parameters` in the script as needed.
-    
-    ```bash
-    bash $BASE_DIR/experiments/finetune_nucoco.sh
-    ```
-
-1. After training is complete, use the `infer_nucoco.sh` script to run inference
-   on the validation set images. Change the veriables under `Parameters` 
-   in the script as needed.
-
-    ```bash
-    bash $BASE_DIR/experiments/infer_nucoco.sh
-    ```
-
-    results are saved in the model directory under `results\vis`.
+--------------------------------------------------------------------------------
+## Citing RRPN
+If you find RRPN useful in your research, please consider citing.
+```
+@inproceedings{nabati2019rrpn,
+  title={RRPN: Radar Region Proposal Network for Object Detection in Autonomous Vehicles},
+  author={Nabati, Ramin and Qi, Hairong},
+  booktitle={2019 IEEE International Conference on Image Processing (ICIP)},
+  pages={3093--3097},
+  year={2019},
+  organization={IEEE}
+}
+```

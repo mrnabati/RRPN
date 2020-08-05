@@ -27,8 +27,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import _init_path
 import argparse
 import cv2  # NOQA (Must import before importing caffe2 due to bug in cv2)
+from PIL import Image
 import logging
 import os
 import sys
@@ -49,6 +51,9 @@ import detectron.utils.c2 as c2_utils
 import detectron.utils.env as envu
 import detectron.utils.vis as vis_utils
 
+from rrpn_generator import rrpn_loader
+from cocoplus.coco import COCO_PLUS
+
 c2_utils.import_detectron_ops()
 
 # OpenCL may be enabled by default in OpenCV3; disable it because it's not
@@ -66,7 +71,17 @@ cv2.ocl.setUseOpenCL(False)
 def parse_args():
     parser = argparse.ArgumentParser(description='Inference on an image')
     parser.add_argument(
-        '--im', dest='im_file', help='input image', default=None, type=str
+        '--im_ind', help='input image index', type=int
+    )
+    parser.add_argument(
+        '--ann_file', dest='ann_file',
+        help='Annotations file',
+        default='./data/nucoco/annotations/instances_mini_val.json'
+    )
+    parser.add_argument(
+        '--imgs_dir', dest='imgs_dir',
+        help='Images directory',
+        default='./data/nucoco/mini_val'
     )
     parser.add_argument(
         '--rpn-pkl',
@@ -76,17 +91,10 @@ def parse_args():
         type=str
     )
     parser.add_argument(
-        '--rpn-cfg',
-        dest='rpn_cfg',
-        help='cfg model file (yaml)',
-        default=None,
-        type=str
-    )
-    parser.add_argument(
         '--output-dir',
         dest='output_dir',
         help='directory for visualization pdfs (default: /tmp/infer)',
-        default='/tmp/infer',
+        default='./data/inference',
         type=str
     )
     parser.add_argument(
@@ -101,33 +109,24 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_rpn_box_proposals(im, args):
-    cfg.immutable(False)
-    # merge_cfg_from_file(args.rpn_cfg)
-    cfg.NUM_GPUS = 1
-    cfg.MODEL.RPN_ONLY = True
-    cfg.TEST.RPN_PRE_NMS_TOP_N = 10000
-    cfg.TEST.RPN_POST_NMS_TOP_N = 2000
-    assert_and_infer_cfg(cache_urls=False)
-
-    model = model_engine.initialize_model_from_cfg(args.rpn_pkl)
-    with c2_utils.NamedCudaScope(0):
-        boxes, scores = rpn_engine.im_proposals(model, im)
-    return boxes, scores
-
-
 def main(args):
     logger = logging.getLogger(__name__)
-    dummy_coco_dataset = dummy_datasets.get_coco_dataset()
+    dummy_nucoco_dataset = dummy_datasets.get_nucoco_dataset()
     cfg_orig = load_cfg(envu.yaml_dump(cfg))
-    im = cv2.imread(args.im_file)
+    
+    ## Load image
+    coco = COCO_PLUS(args.ann_file, args.imgs_dir)
+    image_id = coco.dataset['images'][args.im_ind]['id']
+    img_path = os.path.join(args.imgs_dir, coco.imgs[image_id]["file_name"])
+    im = cv2.imread(img_path)
 
-    if args.rpn_pkl is not None:
-        proposal_boxes, _proposal_scores = get_rpn_box_proposals(im, args)
-        workspace.ResetWorkspace()
-    else:
-        proposal_boxes = None
+    ## Get the proposals for this image
+    proposals = rrpn_loader(args.rpn_pkl)
+    proposal_boxes = proposals[image_id]['boxes']
+    _proposal_scores = proposals[image_id]['scores']
+    workspace.ResetWorkspace()
 
+    ## run models
     cls_boxes, cls_segms, cls_keyps = None, None, None
     for i in range(0, len(args.models_to_run), 2):
         pkl = args.models_to_run[i]
@@ -151,18 +150,18 @@ def main(args):
         workspace.ResetWorkspace()
 
     out_name = os.path.join(
-        args.output_dir, '{}'.format(os.path.basename(args.im_file) + '.pdf')
+        args.output_dir, '{}'.format(os.path.basename(img_path) + '.pdf')
     )
-    logger.info('Processing {} -> {}'.format(args.im_file, out_name))
+    logger.info('Processing {} -> {}'.format(img_path, out_name))
 
     vis_utils.vis_one_image(
         im[:, :, ::-1],
-        args.im_file,
+        img_path,
         args.output_dir,
         cls_boxes,
         cls_segms,
         cls_keyps,
-        dataset=dummy_coco_dataset,
+        dataset=dummy_nucoco_dataset,
         box_alpha=0.3,
         show_class=True,
         thresh=0.7,

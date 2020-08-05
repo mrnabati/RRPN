@@ -30,8 +30,7 @@ import uuid
 # from pycocotools.cocoeval import COCOeval
 import sys
 sys.path.insert(0,'../lib')
-from pycocotools_plus.cocoeval import COCOeval_plus as COCOeval
-
+from cocoplus.coco_eval import COCOeval_plus as COCOeval
 from detectron.core.config import cfg
 from detectron.utils.io import save_object
 import detectron.utils.boxes as box_utils

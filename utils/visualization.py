@@ -76,21 +76,19 @@ def draw_points(img, points, color=(0,255,0), radius=3, thickness=-1, format='BG
 
     return img
 
-
 ## -----------------------------------------------------------------------------
-def vis_class(img, pos, class_str, font_scale=0.35):
-    """Visualizes the class."""
-    img = img.astype(np.uint8)
-    x0, y0 = int(pos[0]), int(pos[1])
-    # Compute text size.
-    txt = class_str
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    ((txt_w, txt_h), _) = cv2.getTextSize(txt, font, font_scale, 1)
-    # Place text background.
-    back_tl = x0, y0 - int(1.3 * txt_h)
-    back_br = x0 + txt_w, y0
-    cv2.rectangle(img, back_tl, back_br, _GREEN, -1)
-    # Show text.
-    txt_tl = x0, y0 - int(0.3 * txt_h)
-    cv2.putText(img, txt, txt_tl, font, font_scale, _GRAY, lineType=cv2.LINE_AA)
-    return img
+def save_fig(filepath, fig=None):
+    '''
+    Save the current image with no whitespace in pdf format
+    '''
+    import matplotlib.pyplot as plt
+    if not fig:
+        fig = plt.gcf()
+
+    plt.subplots_adjust(0,0,1,1,0,0)
+    for ax in fig.axes:
+        ax.axis('off')
+        ax.margins(0,0)
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.yaxis.set_major_locator(plt.NullLocator())
+    fig.savefig(filepath, pad_inches = 0, bbox_inches='tight', format='pdf')

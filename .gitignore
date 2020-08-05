@@ -1,5 +1,3 @@
-NOTES.md
-TODO.md
 **/__pycache__
 
 # Editor specific files
@@ -11,13 +9,9 @@ TODO.md
 *.swp
 *.swo
 
-# Dataset symlinks
+# Data folder
 data/*
 !data/README.md
-
-# Outputs
-output/**
-!output/README.md
 
 # Mac files
 **/.DS_Store

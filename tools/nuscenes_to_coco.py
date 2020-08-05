@@ -1,194 +1,154 @@
-# --------------------------------------------------------
-# RRPN
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Ramin Nabati
-# --------------------------------------------------------
-
-import _init_paths
+import _init_path
 import os
 import sys
-import matplotlib
-import random
-#matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+import pickle
+import numpy as np
 import argparse
-from PIL import Image
-from tqdm import tqdm
-from pycocotools_plus.coco import COCO_PLUS
-from nuscenes_utils.nuscenes import NuScenes
-from nuscenes_utils.data_classes import PointCloud
-from nuscenes_utils.radar_utils import *
-from datasets import nuscene_cat_to_coco
+from tqdm import tqdm, trange
+from cocoplus.coco import COCO_PLUS
+from pynuscenes.utils.nuscenes_utils import nuscenes_box_to_coco, nuscene_cat_to_coco
+from pynuscenes.nuscenes_dataset import NuscenesDataset
+from nuscenes.utils.geometry_utils import view_points
 
 def parse_args():
     # Parse the input arguments
     parser = argparse.ArgumentParser(description='Converts the NuScenes dataset to COCO format')
-    parser.add_argument('--nuscene_root', dest='dataroot',
-                        help='NuScenes dataroot',
-                        default='../data/nuscenes')
+    
+    parser.add_argument('--nusc_root', default='../data/nuscenes',
+                        help='NuScenes dataroot')
+    
+    parser.add_argument('--split', default='mini_train',
+                        help='Dataset split (mini_train, mini_val, train, val, test)')
 
-    parser.add_argument('--train_ann_file', dest='train_ann_file',
-                        help='Train annotations file',
-                        default='../output/nucoco/annotations/instances_train.json')
+    parser.add_argument('--out_dir', default='../data/nucoco/',
+                        help='Output directory for the nucoco dataset')
 
-    parser.add_argument('--val_ann_file', dest='val_ann_file',
-                        help='Validation annotations file',
-                        default='../output/nucoco/annotations/instances_val.json')
+    parser.add_argument('--nsweeps_radar', default=1, type=int,
+                        help='Number of Radar sweeps to include')
 
-    parser.add_argument('--train_imgs_dir', dest='train_imgs_dir',
-                        help='Train output directory',
-                        default='../output/nucoco/train')
+    parser.add_argument('--use_symlinks', default='False',
+                        help='Create symlinks to nuScenes images rather than copying them')
 
-    parser.add_argument('--val_imgs_dir', dest='val_imgs_dir',
-                        help='Validation output directory',
-                        default='../output/nucoco/val')
-
-    parser.add_argument('--train_ratio', dest='train_ratio', type=float,
-                        help='Train samples ratio to all samples (e.g. 0.90)',
-                        default=0.85)
-
-    parser.add_argument('--include_sweeps', dest='include_sweeps',
-                        help='If True, include the non key-frame data in dataset')
-
+    parser.add_argument('--cameras', nargs='+',
+                        default=['CAM_FRONT',
+                                 'CAM_BACK',
+                                #  'CAM_FRONT_LEFT',
+                                #  'CAM_FRONT_RIGHT',
+                                #  'CAM_BACK_LEFT',
+                                #  'CAM_BACK_RIGHT',
+                                 ],
+                        help='List of cameras to use.')
+    
+    parser.add_argument('-l', '--logging_level', default='INFO',
+                        help='Logging level')
+                        
     args = parser.parse_args()
-
-    assert args.train_ratio >= 0 and args.train_ratio <= 1, \
-        "--train_ratio must be in range [0 1]"
-    assert args.include_sweeps in ['True','False'], \
-        "--include_sweeps must be 'True' or 'False'"
-
     return args
 
-
 #-------------------------------------------------------------------------------
-if __name__ == '__main__':
-    random.seed(13)
+def main():
     args = parse_args()
 
-    nusc = NuScenes(version='v0.1', dataroot=args.dataroot, verbose=True)
-    coco_train = COCO_PLUS(args.train_ann_file, args.train_imgs_dir, new_dataset=True)
-    coco_val = COCO_PLUS(args.val_ann_file, args.val_imgs_dir, new_dataset=True)
+    if "mini" in args.split:
+        nusc_version = "v1.0-mini"
+    elif "test" in args.split:
+        nusc_version = "v1.0-test"
+    else:
+        nusc_version = "v1.0-trainval"
 
-    for i in tqdm(range(0, len(nusc.scene))):
-        scene = nusc.scene[i]
-        scene_rec = nusc.get('scene', scene['token'])
-        sample_rec = nusc.get('sample', scene_rec['first_sample_token'])
+    ## Categories: [category, supercategory, category_id]
+    categories = [['person',      'person' ,  1],
+                  ['bicylce',     'vehicle',  2],
+                  ['car',         'vehicle',  3],
+                  ['motorcycle',  'vehicle',  4],
+                  ['bus',         'vehicle',  5],
+                  ['truck',       'vehicle',  6]
+    ]
+    
+    ## Short split is used for filenames
+    anns_file = os.path.join(args.out_dir, 'annotations', 'instances_' + args.split + '.json')
 
-        ## Get front sensors data
-        f_cam_rec = nusc.get('sample_data', sample_rec['data']['CAM_FRONT'])
-        f_rad_rec = nusc.get('sample_data', sample_rec['data']['RADAR_FRONT'])
+    nusc_dataset = NuscenesDataset(nusc_path=args.nusc_root, 
+                                   nusc_version=nusc_version, 
+                                   split=args.split,
+                                   coordinates='vehicle',
+                                   nsweeps_radar=args.nsweeps_radar, 
+                                   sensors_to_return=['camera', 'radar'],
+                                   pc_mode='camera',
+                                   logging_level=args.logging_level)
+    
+    coco_dataset = COCO_PLUS(logging_level="INFO")
+    coco_dataset.create_new_dataset(dataset_dir=args.out_dir, split=args.split)
 
-        ## Get rear sensors data
-        b_cam_rec = nusc.get('sample_data', sample_rec['data']['CAM_BACK'])
-        br_rad_rec = nusc.get('sample_data', sample_rec['data']['RADAR_BACK_RIGHT'])
-        bl_rad_rec = nusc.get('sample_data', sample_rec['data']['RADAR_BACK_LEFT'])
+    ## add all category in order to have consistency between dataset splits
+    for (coco_cat, coco_supercat, coco_cat_id) in categories:
+        coco_dataset.addCategory(coco_cat, coco_supercat, coco_cat_id)
+    
+    ## Get samples from the Nuscenes dataset
+    num_samples = len(nusc_dataset)
+    for i in trange(num_samples):
+        sample = nusc_dataset[i]
+        img_ids = sample['img_id']
 
-        has_more_data = True
-        while has_more_data:
-            rnd = random.uniform(0, 1)
-            anns_f = []
-            anns_b = []
-            f_camera_token = f_cam_rec['token']
-            b_camera_token = b_cam_rec['token']
-            f_radar_token = f_rad_rec['token']
-            br_radar_token = br_rad_rec['token']
-            bl_radar_token = bl_rad_rec['token']
+        for i, cam_sample in enumerate(sample['camera']):
+            if cam_sample['camera_name'] not in args.cameras:
+                continue
 
-            ## FRONT CAM + RADAR
-            impath_f, boxes_f, camera_intrinsic_f = nusc.get_select_sample_data(
-                f_camera_token, min_ann_vis_level=1)
-            points_f, coloring_f, image_f = nusc.explorer.map_pointcloud_to_image(
-                f_radar_token, f_camera_token)
-            points_f[2, :] = coloring_f
+            img_id = int(img_ids[i])
+            image = cam_sample['image']
+            pc = sample['radar'][i]
+            cam_cs_record = cam_sample['cs_record']
+            img_height, img_width, _ = image.shape
 
-            ## Back CAM + RADARs
-            impath_b, boxes_b, camera_intrinsic_b = nusc.get_select_sample_data(
-                b_camera_token, min_ann_vis_level=1)
-            points_br, coloring_br, image_b = nusc.explorer.map_pointcloud_to_image(
-                br_radar_token, b_camera_token)
-            points_br[2, :] = coloring_br
-            points_bl, coloring_bl, _ = nusc.explorer.map_pointcloud_to_image(
-                bl_radar_token, b_camera_token)
-            points_bl[2, :] = coloring_bl
-
-            ## Concatenate the two back Radar detections
-            points_b = np.hstack((points_br,points_bl))
-
-            # Convert to list of points
-            points_f = np.squeeze(np.dstack((points_f[0,:], points_f[1,:], points_f[2,:]))).tolist()
-            points_b = np.squeeze(np.dstack((points_b[0,:], points_b[1,:], points_b[2,:]))).tolist()
-            if not isinstance(points_f[0], list) and len(points_f) == 3:
-                points_f = [points_f]
-            if not isinstance(points_b[0], list) and len(points_b) == 3:
-                points_b = [points_b]
-
-            for box in boxes_f:
-                coco_cat, coco_cat_id, coco_supercat = nuscene_cat_to_coco(box.name)
+            # Create annotation in coco_dataset format
+            sample_anns = []
+            annotations = nusc_dataset.pc_to_sensor(sample['annotations'][i], 
+                                                    cam_cs_record)
+        
+            for ann in annotations:
+                coco_cat, coco_cat_id, coco_supercat = nuscene_cat_to_coco(ann.name)
+                ## if not a valid category, go to the next annotation
                 if coco_cat is None:
+                    coco_dataset.logger.debug('Skipping ann with category: {}'.format(ann.name))
                     continue
+                
+                cat_id = coco_dataset.addCategory(coco_cat, coco_supercat, coco_cat_id)
+                bbox = nuscenes_box_to_coco(ann, np.array(cam_cs_record['camera_intrinsic']), 
+                                            (img_width, img_height))
+                coco_ann = coco_dataset.createAnn(bbox, cat_id)
+                sample_anns.append(coco_ann)
 
-                cat_id = coco_train.addCategory(coco_cat, coco_supercat, int(coco_cat_id))
-                cat_id_2 = coco_val.addCategory(coco_cat, coco_supercat, int(coco_cat_id))
-                assert cat_id == cat_id_2, "cat_id mismatch"
+            ## Map the Radar pointclouds to image
+            pc_cam = nusc_dataset.pc_to_sensor(pc, cam_cs_record)
+            pc_depth = pc_cam[2, :]
+            pc_image = view_points(pc_cam[:3, :], 
+                                 np.array(cam_cs_record['camera_intrinsic']), 
+                                 normalize=True)
+            
+            ## Add the depth information to each point
+            pc_coco = np.vstack((pc_image[:2,:], pc_depth))
+            pc_coco = np.transpose(pc_coco).tolist()
 
-                # Create annotation in COCO format
-                bbox = box.to_coco_bbox(camera_intrinsic_f, image_f.size)
-                coco_ann = COCO_PLUS.createAnn(bbox, cat_id)
-                anns_f.append(coco_ann)
+            ## Add sample to the COCO dataset
+            coco_img_path = coco_dataset.addSample(img=image,
+                                           anns=sample_anns, 
+                                           pointcloud=pc_coco,
+                                           img_id=img_id,
+                                           other=cam_cs_record,
+                                           img_format='RGB',
+                                           write_img= not args.use_symlinks,
+                                           )
+            
+            if args.use_symlinks:
+                try:
+                    os.symlink(os.path.abspath(cam_sample['cam_path']), coco_img_path)
+                except FileExistsError:
+                    pass
+            
+            ## Uncomment to visualize
+            # coco_dataset.showImgAnn(np.asarray(image), sample_anns, bbox_only=True, BGR=False)
+        
+    coco_dataset.saveAnnsToDisk()
 
-            for box in boxes_b:
-                coco_cat, coco_cat_id, coco_supercat = nuscene_cat_to_coco(box.name)
-                if coco_cat is None:
-                    continue
-
-                cat_id = coco_train.addCategory(coco_cat, coco_supercat, int(coco_cat_id))
-                cat_id_2 = coco_val.addCategory(coco_cat, coco_supercat, int(coco_cat_id))
-                assert cat_id == cat_id_2, "cat_id mismatch"
-
-                bbox = box.to_coco_bbox(camera_intrinsic_b, image_b.size)
-                coco_ann = COCO_PLUS.createAnn(bbox, cat_id)
-                anns_b.append(coco_ann)
-
-            if rnd <= args.train_ratio:
-                coco_train.addSample(np.asarray(image_f), anns_f, points_f,
-                                     img_format='RGB')
-                coco_train.addSample(np.asarray(image_b), anns_b, points_b,
-                                     img_format='RGB')
-            else:
-                coco_val.addSample(np.asarray(image_f), anns_f, points_f,
-                                    img_format='RGB')
-                coco_val.addSample(np.asarray(image_b), anns_b, points_b,
-                                    img_format='RGB')
-
-            ## -----------------------------------------------------------------
-            if args.include_sweeps == 'True':
-                # Get the next Sweep
-                if not f_cam_rec['next'] == "" and not f_rad_rec['next'] == "" \
-                    and not b_cam_rec['next'] == "" and not br_rad_rec['next'] == "" \
-                    and not bl_rad_rec['next'] == "":
-
-                    f_cam_rec = nusc.get('sample_data', f_cam_rec['next'])
-                    f_rad_rec = nusc.get('sample_data', f_rad_rec['next'])
-
-                    b_cam_rec = nusc.get('sample_data', b_cam_rec['next'])
-                    br_rad_rec = nusc.get('sample_data', br_rad_rec['next'])
-                    bl_rad_rec = nusc.get('sample_data', bl_rad_rec['next'])
-                else:
-                    has_more_data = False
-
-            else:
-                # Get the next Sample
-                if not sample_rec['next'] == "":
-                    sample_rec = nusc.get('sample', sample_rec['next'])
-                    f_cam_rec = nusc.get('sample_data', sample_rec['data']['CAM_FRONT'])
-                    f_rad_rec = nusc.get('sample_data', sample_rec['data']['RADAR_FRONT'])
-
-                    b_cam_rec = nusc.get('sample_data', sample_rec['data']['CAM_BACK'])
-                    br_rad_rec = nusc.get('sample_data', sample_rec['data']['RADAR_BACK_RIGHT'])
-                    bl_rad_rec = nusc.get('sample_data', sample_rec['data']['RADAR_BACK_LEFT'])
-
-                else:
-                    has_more_data = False
-
-    coco_train.saveAnnsToDisk()
-    coco_val.saveAnnsToDisk()
+if __name__ == '__main__':
+    main()

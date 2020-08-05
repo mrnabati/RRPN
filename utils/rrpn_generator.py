@@ -1,14 +1,8 @@
-# --------------------------------------------------------
-# RRPN
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Ramin Nabati
-# --------------------------------------------------------
 
 import os
 import sys
 import cv2
 import matplotlib
-# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pickle
 import numpy as np
@@ -88,6 +82,7 @@ def _generate_anchors(point, sizes, aspect_ratios, layout, beta, include_depth):
 def _filter_anchors(anchors):
     """Filter anchors based on their size
     """
+    #TODO: Implement this function
     return anchors
 
 

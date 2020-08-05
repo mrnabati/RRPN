@@ -45,3 +45,17 @@ def get_coco_dataset():
     ]
     ds.classes = {i: name for i, name in enumerate(classes)}
     return ds
+
+def get_nucoco_dataset():
+    """A dummy nuCOCO dataset that includes only the 'classes' field."""
+    ds = AttrDict()
+    classes = [
+        '__background__', 'person', 'bicycle', 'car', 'motorcycle',
+        'bus', 'truck'
+    ]
+    # classes = [
+    #     '__background__', 'car', 'truck', 'person', 'motorcycle',
+    #     'bus', 'bicycle'
+    # ]
+    ds.classes = {i: name for i, name in enumerate(classes)}
+    return ds

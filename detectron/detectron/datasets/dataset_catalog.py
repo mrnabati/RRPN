@@ -49,6 +49,18 @@ _DATASETS = {
         _ANN_FN:
             _DATA_DIR + '/nucoco/annotations/instances_val.json',
     },
+    'nucoco_mini_train': {
+        _IM_DIR:
+            _DATA_DIR + '/nucoco/mini_train',
+        _ANN_FN:
+            _DATA_DIR + '/nucoco/annotations/instances_mini_train.json',
+    },
+    'nucoco_mini_val': {
+        _IM_DIR:
+            _DATA_DIR + '/nucoco/mini_val',
+        _ANN_FN:
+            _DATA_DIR + '/nucoco/annotations/instances_mini_val.json',
+    },
     'cityscapes_fine_instanceonly_seg_train': {
         _IM_DIR:
             _DATA_DIR + '/cityscapes/images',
