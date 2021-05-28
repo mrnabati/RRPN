@@ -53,7 +53,7 @@ algorithm.
   make
   ```
 
-- Download the NeScenes dataset from its [Download Page](https://www.nuscenes.org/download), 
+- Download the NuScenes dataset from its [Download Page](https://www.nuscenes.org/download), 
   unpack the archive files to `~/rrpn/data/nuscenes/` _without_
   overwriting folders that occur in multiple archives. Eventually you should
   have the following folder structure:
